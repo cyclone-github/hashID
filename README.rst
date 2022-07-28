@@ -1,3 +1,5 @@
+This is a forked version of hashid by c0re which has been updated by cyclone to include severa dozen more algos.
+
 hashID \| hash-identifier
 =========================
 
@@ -7,9 +9,7 @@ This replaces `hash-identifier <http://code.google.com/p/hash-identifier/>`__, w
 is outdated!
 
 hashID is a tool written in Python 3 which supports the
-identification of over 220 unique hash types using regular expressions.
-A detailed list of supported hashes can be found
-`here <https://github.com/psypanda/hashID/blob/master/doc/HASHINFO.xlsx>`__.
+identification of over 220+ unique hash types using regular expressions.
 
 It is able to identify a single hash, parse a file or read multiple
 files in a directory and identify the hashes within them.
@@ -25,26 +25,12 @@ quotes to prevent interpolation.*
 Installation
 ------------
 
-You can install, upgrade, uninstall hashID with these commands:
+clone the repository:
 
 .. code:: console
 
-    $ pip install hashid
-    $ pip install --upgrade hashid
-    $ pip uninstall hashid
-
-Or you can install by cloning the repository:
-
-.. code:: console
-
-    $ sudo apt-get install python3 git
-    $ git clone https://github.com/psypanda/hashid.git
+    $ git clone https://github.com/cyclone-github/hashID.git
     $ cd hashid
-    $ sudo install -g 0 -o 0 -m 0644 doc/man/hashid.7 /usr/share/man/man7/
-    $ sudo gzip /usr/share/man/man7/hashid.7
-
-Alternatively you can grab the latest release
-`here <https://github.com/psypanda/hashID/releases>`__.
 
 Usage
 -----
@@ -100,6 +86,7 @@ Screenshot
 Resources
 ---------
 
+-  http://psypanda.github.io/hashID/
 -  http://pythonhosted.org/passlib/index.html
 -  http://openwall.info/wiki/john
 -  http://openwall.info/wiki/john/sample-hashes
