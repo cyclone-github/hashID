@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# hashid.py - Software to identify the different types of hashes
-# Copyright (C) 2013-2015 by c0re <c0re@psypanda.org>
-#
+# Copyright (C) 2020-2022 by cyclone
+# Copyright (C) 2013-2015 by c0re
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
@@ -17,23 +16,280 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import io
-import os
 import re
+import os
+import io
 import sys
 import argparse
 from collections import namedtuple
 
-__author__  = "c0re"
-__version__ = "3.2.0-dev"
-__github__  = "https://github.com/psypanda/hashID"
+__author__  = "cyclone (based off of coding from c0re)"
+__version__ = "3.3_6-16-2022"
+__github__  = "https://github.com/gitcyclong/hashID"
 __license__ = "License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>"
-__banner__  = "hashID v{0} by {1} ({2})".format(__version__, __author__, __github__)
 
 Prototype = namedtuple('Prototype', ['regex', 'modes'])
 HashInfo = namedtuple('HashInfo', ['name', 'hashcat', 'john', 'extended'])
 
+#
 prototypes = [
+
+
+# cyclone algo's
+	Prototype(
+        regex=re.compile(r'^\$[0-9]{1}\$rounds\=[0-9]{4,}\$', re.IGNORECASE),
+        modes=[
+            HashInfo(name='sha256crypt $5$, SHA256 (Unix)', hashcat=7400, john=None, extended=False)]),
+	Prototype(
+        regex=re.compile(r'^\$multibit\$1\*[a-f0-9]{16}\*', re.IGNORECASE),
+        modes=[
+            HashInfo(name='MultiBit Classic .key (MD5)', hashcat=22500, john=None, extended=False)]),           
+	Prototype(
+        regex=re.compile(r'^\$multibit\$2\*[a-f0-9]{32}\*', re.IGNORECASE),
+        modes=[
+            HashInfo(name='MultiBit HD (scrypt)', hashcat=22700, john=None, extended=False)]),
+	Prototype(
+        regex=re.compile(r'^\$bitcoin\$[0-9]{1,3}\$[a-f0-9]{10}', re.IGNORECASE),
+        modes=[
+            HashInfo(name='Bitcoin', hashcat=11300, john=None, extended=False)]),
+	Prototype(
+        regex=re.compile(r'^sha256\:[0-9]{1,6}\:[a-z0-9]{19}$', re.IGNORECASE), # regex not working
+        modes=[
+            HashInfo(name='PBKDF2-HMAC-SHA256', hashcat=10900, john=None, extended=False)]),
+	Prototype(
+        regex=re.compile(r'^\$RAR3\$\*[0]{1}\*[a-f0-9]{16}\*[a-f0-9]{16}', re.IGNORECASE),
+        modes=[
+            HashInfo(name='RAR3-hp', hashcat=12500, john=None, extended=False)]),
+	Prototype(
+        regex=re.compile(r'^\$RAR3\$\*[1]{1}\*[a-f0-9]{16}\*[a-f0-9]{8}\*|$\*33', re.IGNORECASE),
+        modes=[
+            HashInfo(name='RAR3-p compressed', hashcat=23800, john=None, extended=False)]),
+	Prototype(
+        regex=re.compile(r'^\$RAR3\$\*[1]{1}\*[a-f0-9]{16}\*[a-f0-9]{8}\*|\*30$', re.IGNORECASE),
+        modes=[
+            HashInfo(name='RAR3-p uncompressed', hashcat=23700, john=None, extended=False)]),
+	Prototype(
+        regex=re.compile(r'^\$rar5\$[0-9]{1,3}\$[a-f0-9]{5}', re.IGNORECASE),
+        modes=[
+            HashInfo(name='RAR5', hashcat=13000, john=None, extended=False)]),
+	Prototype(
+        regex=re.compile(r'^\$blockchain\$[0-9]{1,6}\$[0-9]{10}', re.IGNORECASE),
+        modes=[
+            HashInfo(name='Blockchain, My Wallet', hashcat=12700, john=None, extended=False)]),
+	Prototype(
+        regex=re.compile(r'^\$blockchain\$v2\$[0-9]{1,6}\$', re.IGNORECASE),
+        modes=[
+            HashInfo(name='Blockchain, My Wallet, V2', hashcat=15200, john=None, extended=False)]),
+	Prototype(
+        regex=re.compile(r'[a-z0-9\+\/]{79}\=', re.IGNORECASE),
+        modes=[
+            HashInfo(name='Blockchain, My Wallet, Second Password (SHA256)', hashcat=18800, john=None, extended=False)]),
+	Prototype(
+        regex=re.compile(r'^\$krb5tgs\$[0-9]{1,3}\$\*', re.IGNORECASE),
+        modes=[
+            HashInfo(name='Kerberos 5', hashcat=13100, john=None, extended=False)]),
+	Prototype(
+        regex=re.compile(r'^\$keepass\$\*[1]{1}\*[0-9]{4,5}\*[0-9]{1,3}', re.IGNORECASE),
+        modes=[
+            HashInfo(name='KeePass 1 AES / without keyfile', hashcat=13400, john=None, extended=False)]),
+	Prototype(
+        regex=re.compile(r'^\$keepass\$\*[2]{1}\*[0-9]{4,5}\*[0-9]{1,3}', re.IGNORECASE),
+        modes=[
+            HashInfo(name='KeePass 2 AES / without keyfile', hashcat=13400, john=None, extended=False)]),
+	Prototype(
+        regex=re.compile(r'^\$itunes_backup\$\*[9]{1}\*[a-z0-9]{10}', re.IGNORECASE),
+        modes=[
+            HashInfo(name='iTunes backup < 10.0', hashcat=14700, john=None, extended=False)]),
+	Prototype(
+        regex=re.compile(r'^\$itunes_backup\$\*[10]{2}\*[a-z0-9]{10}', re.IGNORECASE),
+        modes=[
+            HashInfo(name='iTunes backup > 10.0', hashcat=14800, john=None, extended=False)]),
+	Prototype(
+        regex=re.compile(r'^\$ethereum\$p\*[0-9]{2,10}\*[0-9]{10}', re.IGNORECASE),
+        modes=[
+            HashInfo(name='Ethereum Wallet, PBKDF2-HMAC-SHA256', hashcat=15600, john=None, extended=False)]),
+	Prototype(
+        regex=re.compile(r'^\$ethereum\$s\*[0-9]{2,10}\*[0-9]{1,10}', re.IGNORECASE),
+        modes=[
+            HashInfo(name='Ethereum Wallet, SCRYPT', hashcat=15700, john=None, extended=False)]),
+	Prototype(
+        regex=re.compile(r'^\$ethereum\$w\*[a-z0-9]{10}', re.IGNORECASE),
+        modes=[
+            HashInfo(name='Ethereum Pre-Sale Wallet, PBKDF2-HMAC-SHA256', hashcat=16300, john=None, extended=False)]),
+	Prototype(
+        regex=re.compile(r'^\$electrum\$[123]{1}\*[0-9]{10}', re.IGNORECASE),
+        modes=[
+            HashInfo(name='Electrum Wallet (Salt-Type 1-3)', hashcat=16600, john=None, extended=False)]),
+	Prototype(
+        regex=re.compile(r'^\$electrum\$[4]{1}\*[a-z0-9]{10}', re.IGNORECASE),
+        modes=[
+            HashInfo(name='Electrum Wallet (Salt-Type 4)', hashcat=21700, john=None, extended=False)]),
+	Prototype(
+        regex=re.compile(r'^\$electrum\$[5]{1}\*[a-z0-9]{10}', re.IGNORECASE),
+        modes=[
+            HashInfo(name='Electrum Wallet (Salt-Type 5)', hashcat=21800, john=None, extended=False)]),
+	Prototype(
+        regex=re.compile(r'^[a-z0-9]{32}\*[a-z0-9]{12}\*[a-z0-9]{12}', re.IGNORECASE),
+        modes=[
+            HashInfo(name='WPA-PMKID-PBKDF2', hashcat=16800, john=None, extended=False)]),
+	Prototype(
+        regex=re.compile(r'^\$pkzip2\$[1]{1}\*[1]{1}\*[2]{1}\*[0]{1}\*[a-z0-9]{2}\*', re.IGNORECASE),
+        modes=[
+            HashInfo(name='PKZIP (Compressed)', hashcat=17200, john=None, extended=False)]),
+	Prototype(
+        regex=re.compile(r'^\$pkzip2\$[1]{1}\*[1]{1}\*[2]{1}\*[0]{1}\*[a-z0-9]{3}\*', re.IGNORECASE),
+        modes=[
+            HashInfo(name='PKZIP (Uncompressed)', hashcat=17210, john=None, extended=False)]),
+	Prototype(
+        regex=re.compile(r'^\$pkzip2\$[3]{1}\*[1]{1}\*[1]{1}\*[0]{1}\*[0-9]{1}\*[0-9]{2}\*', re.IGNORECASE),
+        modes=[
+            HashInfo(name='PKZIP (Compressed Multi-File)', hashcat=17200, john=None, extended=False)]),
+	Prototype(
+        regex=re.compile(r'^\$pkzip2\$[3]{1}\*[1]{1}\*[1]{1}\*[0]{1}\*[0-9]{1}\*[0-9]{2}\*', re.IGNORECASE),
+        modes=[
+            HashInfo(name='PKZIP (Mixed Multi-File)', hashcat=17250, john=None, extended=False)]),
+	Prototype(
+        regex=re.compile(r'^\$pkzip2\$[8]{1}\*[0-9]{1}\*[0-9]{1}\*[0-9]{1}\*[0-9]{1}\*[0-9]{2}\*', re.IGNORECASE),
+        modes=[
+            HashInfo(name='PKZIP (Compressed Multi-File Checksum-Only)', hashcat=17230, john=None, extended=False)]),
+	Prototype(
+        regex=re.compile(r'^\$krb5asrep\$[0-9]{1,3}\$', re.IGNORECASE),
+        modes=[
+            HashInfo(name='Kerberos 5 AS-REP etype 23', hashcat=18200, john=None, extended=False)]),
+	Prototype(
+        regex=re.compile(r'^\$odf\$\*[1]{1}\*[1]{1}', re.IGNORECASE),
+        modes=[
+            HashInfo(name='Open Document Format (ODF) 1.2 (SHA-256, AES)', hashcat=18400, john=None, extended=False)]),
+	Prototype(
+        regex=re.compile(r'^\$odf\$\*[0]{1}\*[0]{1}', re.IGNORECASE),
+        modes=[
+            HashInfo(name='Open Document Format (ODF) 1.1 (SHA-1, Blowfish)', hashcat=18600, john=None, extended=False)]),
+	Prototype(
+        regex=re.compile(r'^\$ab\$[0-9]{1}\*[0]{1}\*', re.IGNORECASE),
+        modes=[
+            HashInfo(name='Android Backup', hashcat=18900, john=None, extended=False)]),
+	Prototype(
+        regex=re.compile(r'^[a-z0-9]{40}\:[0-9]{12}\:[0-9]{19}', re.IGNORECASE),
+        modes=[
+            HashInfo(name='Ruby on Rails Restful-Authentication', hashcat=19500, john=None, extended=False)]),
+	Prototype(
+        regex=re.compile(r'^\$krb5tgs\$17\$', re.IGNORECASE),
+        modes=[
+            HashInfo(name='Kerberos 5 TGS-REP etype 17 (AES128-CTS-HMAC-SHA1-96)', hashcat=19600, john=None, extended=False)]),
+	Prototype(
+        regex=re.compile(r'^\$krb5tgs\$18\$', re.IGNORECASE),
+        modes=[
+            HashInfo(name='Kerberos 5 TGS-REP etype 18 (AES256-CTS-HMAC-SHA1-96)', hashcat=19700, john=None, extended=False)]),
+	Prototype(
+        regex=re.compile(r'^\$krb5pa\$17\$', re.IGNORECASE),
+        modes=[
+            HashInfo(name='Kerberos 5, etype 17, Pre-Auth', hashcat=19800, john=None, extended=False)]),
+	Prototype(
+        regex=re.compile(r'^\$krb5pa\$18\$', re.IGNORECASE),
+        modes=[
+            HashInfo(name='Kerberos 5, etype 18, Pre-Auth', hashcat=19700, john=None, extended=False)]),
+	Prototype(
+        regex=re.compile(r'^[a-f0-9]{64}\:[a-z0-9]{10,64}', re.IGNORECASE),
+        modes=[
+            HashInfo(name='sha256(sha256($pass).$salt)', hashcat=20710, john=None, extended=False)]),
+	Prototype(
+        regex=re.compile(r'^[a-f0-9]{64}\:[a-z0-9]{10,64}', re.IGNORECASE),
+        modes=[
+            HashInfo(name='sha256($pass).$salt)', hashcat=1410, john=None, extended=False)]),
+	Prototype(
+        regex=re.compile(r'^[a-f0-9]{64}\:[a-z0-9]{10,64}', re.IGNORECASE),
+        modes=[
+            HashInfo(name='sha256($salt).$pass)', hashcat=1420, john=None, extended=False)]),
+	Prototype(
+        regex=re.compile(r'^WPA\*[0-9]{2}\*[a-f0-9]{32}\*[a-f0-9]{12}\*[a-f0-9]{12}\*[a-f0-9]{26}\*', re.IGNORECASE),
+        modes=[
+            HashInfo(name='WPA-PBKDF2-PMKID+EAPOL', hashcat=22000, john=None, extended=False),
+            HashInfo(name='WPA-PMK-PMKID+EAPOL', hashcat=22001, john=None, extended=False)]),
+	Prototype(
+        regex=re.compile(r'^\$bitlocker\$[0-9]{1}\$[0-9]{2}\$', re.IGNORECASE),
+        modes=[
+            HashInfo(name='BitLocker', hashcat=22100, john=None, extended=False)]),
+	Prototype(
+        regex=re.compile(r'^.{1,50}\$dmg\$[0-9]{1,4}\*[0-9]{1,4}\*', re.IGNORECASE), # dmg not working
+        #regex=re.compile(r'[[:print:]]{1,100}dmg\:\$dmg\$[0-9]{1,4}\*[0-9]{1,4}\*', re.IGNORECASE),
+        modes=[
+            HashInfo(name='DMG', hashcat=None, john='dmg', extended=False)]),
+    Prototype(
+        regex=re.compile(r'^\$pdf\$[1]\*[2]\*[0-9]{2}\*-[0-9]{1,5}\*[0-9]{1,2}\*', re.IGNORECASE),
+        modes=[
+            HashInfo(name='PDF 1.1 - 1.3 (Acrobat 2 - 4)', hashcat=10400, john='pdf', extended=False)]),
+    Prototype(
+        regex=re.compile(r'^\$pdf\$[5]\*[5]\*256\*-[0-9]{1,5}\*[0-9]{1,2}\*', re.IGNORECASE),
+        modes=[
+            HashInfo(name='PDF 1.7 Level 3 (Acrobat 9)', hashcat=10600, john='pdf', extended=False)]),
+    Prototype(
+        regex=re.compile(r'^\$pdf\$[5]\*[6]\*256\*-[0-9]{1,5}\*[0-9]{1,2}\*', re.IGNORECASE),
+        modes=[
+            HashInfo(name='PDF 1.7 Level 8 (Acrobat 10 - 11)', hashcat=10700, john='pdf', extended=False)]),
+	Prototype(
+        regex=re.compile(r'^[a-f0-9]{40}\:--[a-z0-9]{20,40}--', re.IGNORECASE),
+        modes=[
+            HashInfo(name='SHA1DASH(--salt--).(plain--)) + dash.rule', hashcat=120, john=None, extended=False)]),
+	Prototype(
+        regex=re.compile(r'^[0-9]{3,10}:[a-f0-9]{16}:[a-f0-9]{1000,2500}', re.IGNORECASE),
+        modes=[
+            HashInfo(name='1Password, agilekeychain', hashcat=6600, john=None, extended=False)]),
+	Prototype(
+        regex=re.compile(r'^\$blockchain\$[0-9]{1,6}\$[a-f0-9]{100,200}', re.IGNORECASE),
+        modes=[
+            HashInfo(name='Blockchain, My Wallet', hashcat=12700, john=None, extended=False)]),
+    Prototype(
+        regex=re.compile(r'^[a-f0-9]{40}\:[a-z0-9]{9}', re.IGNORECASE),
+        modes=[
+            HashInfo(name='OpenCart', hashcat=13900, john=None, extended=False)]),
+
+# updated c0re algo's
+	Prototype(
+        regex=re.compile(r'^[a-f0-9]{32}\:[a-z0-9]{32}', re.IGNORECASE),
+        modes=[
+            HashInfo(name='MD5(salt).(plain)', hashcat=20, john=None, extended=False),
+            HashInfo(name='MD5(plain).(salt)', hashcat=10, john=None, extended=False),
+            HashInfo(name='md5($salt.$pass)', hashcat=20, john=None, extended=False),
+            HashInfo(name='HMAC-MD5 (key = $pass)', hashcat=50, john='hmac-md5', extended=False),
+            HashInfo(name='HMAC-MD5 (key = $salt)', hashcat=60, john='hmac-md5', extended=False),
+            HashInfo(name='md5(md5($salt).$pass)', hashcat=3610, john=None, extended=False),
+            HashInfo(name='md5($salt.md5($pass))', hashcat=3710, john=None, extended=False),
+            HashInfo(name='md5($pass.md5($salt))', hashcat=3720, john=None, extended=False),
+            HashInfo(name='md5($salt.$pass.$salt)', hashcat=3810, john=None, extended=False),
+            HashInfo(name='md5(md5($pass).md5($salt))', hashcat=3910, john=None, extended=False),
+            HashInfo(name='md5($salt.md5($salt.$pass))', hashcat=4010, john=None, extended=False),
+            HashInfo(name='md5($salt.md5($pass.$salt))', hashcat=4110, john=None, extended=False),
+            HashInfo(name='md5(unicode($pass).$salt)', hashcat=30, john=None, extended=False),
+            HashInfo(name='md5($salt.unicode($pass))', hashcat=40, john=None, extended=False)]),
+	Prototype(
+        regex=re.compile(r'^[a-f0-9]{40}\:[a-z0-9]{20,40}', re.IGNORECASE),
+        modes=[
+			HashInfo(name='SHA1DASH(--salt--).(plain--)', hashcat=None, john=None, extended=False),
+            HashInfo(name='SHA1(salt).(plain)', hashcat=120, john=None, extended=False),
+            HashInfo(name='SHA1(plain).(salt)', hashcat=110, john=None, extended=False)]),
+    Prototype(
+        regex=re.compile(r'^[a-f0-9]{32}', re.IGNORECASE),
+        modes=[
+            HashInfo(name='MD5', hashcat=0, john='raw-md5', extended=False),
+            HashInfo(name='MD4', hashcat=900, john='raw-md4', extended=False),
+            HashInfo(name='Double MD5', hashcat=2600, john=None, extended=False),
+            HashInfo(name='LM', hashcat=3000, john='lm', extended=False),
+            HashInfo(name='RIPEMD-128', hashcat=None, john='ripemd-128', extended=False),
+            HashInfo(name='Haval-128', hashcat=None, john='haval-128-4', extended=False),
+            HashInfo(name='Tiger-128', hashcat=None, john=None, extended=False),
+            HashInfo(name='Skein-256(128)', hashcat=None, john=None, extended=False),
+            HashInfo(name='Skein-512(128)', hashcat=None, john=None, extended=False),
+            HashInfo(name='Lotus Notes/Domino 5', hashcat=8600, john='lotus5', extended=False),
+            HashInfo(name='Skype', hashcat=23, john=None, extended=False),
+            HashInfo(name='ZipMonster', hashcat=None, john=None, extended=True),
+            HashInfo(name='PrestaShop', hashcat=11000, john=None, extended=True),
+            HashInfo(name='md5(md5(md5($pass)))', hashcat=3500, john=None, extended=True),
+            HashInfo(name='md5(strtoupper(md5($pass)))', hashcat=4300, john=None, extended=True),
+            HashInfo(name='md5(sha1($pass))', hashcat=4400, john=None, extended=True),
+            HashInfo(name='md5($username.0.$pass)', hashcat=4210, john=None, extended=True)]),
+
+# original hash algo's by c0re
+
     Prototype(
         regex=re.compile(r'^[a-f0-9]{4}$', re.IGNORECASE),
         modes=[
@@ -104,39 +360,6 @@ prototypes = [
         regex=re.compile(r'^(\$md2\$)?[a-f0-9]{32}$', re.IGNORECASE),
         modes=[
             HashInfo(name='MD2', hashcat=None, john='md2', extended=False)]),
-    Prototype(
-        regex=re.compile(r'^[a-f0-9]{32}(:.+)?$', re.IGNORECASE),
-        modes=[
-            HashInfo(name='MD5', hashcat=0, john='raw-md5', extended=False),
-            HashInfo(name='MD4', hashcat=900, john='raw-md4', extended=False),
-            HashInfo(name='Double MD5', hashcat=2600, john=None, extended=False),
-            HashInfo(name='LM', hashcat=3000, john='lm', extended=False),
-            HashInfo(name='RIPEMD-128', hashcat=None, john='ripemd-128', extended=False),
-            HashInfo(name='Haval-128', hashcat=None, john='haval-128-4', extended=False),
-            HashInfo(name='Tiger-128', hashcat=None, john=None, extended=False),
-            HashInfo(name='Skein-256(128)', hashcat=None, john=None, extended=False),
-            HashInfo(name='Skein-512(128)', hashcat=None, john=None, extended=False),
-            HashInfo(name='Lotus Notes/Domino 5', hashcat=8600, john='lotus5', extended=False),
-            HashInfo(name='Skype', hashcat=23, john=None, extended=False),
-            HashInfo(name='ZipMonster', hashcat=None, john=None, extended=True),
-            HashInfo(name='PrestaShop', hashcat=11000, john=None, extended=True),
-            HashInfo(name='md5(md5(md5($pass)))', hashcat=3500, john=None, extended=True),
-            HashInfo(name='md5(strtoupper(md5($pass)))', hashcat=4300, john=None, extended=True),
-            HashInfo(name='md5(sha1($pass))', hashcat=4400, john=None, extended=True),
-            HashInfo(name='md5($pass.$salt)', hashcat=10, john=None, extended=True),
-            HashInfo(name='md5($salt.$pass)', hashcat=20, john=None, extended=True),
-            HashInfo(name='md5(unicode($pass).$salt)', hashcat=30, john=None, extended=True),
-            HashInfo(name='md5($salt.unicode($pass))', hashcat=40, john=None, extended=True),
-            HashInfo(name='HMAC-MD5 (key = $pass)', hashcat=50, john='hmac-md5', extended=True),
-            HashInfo(name='HMAC-MD5 (key = $salt)', hashcat=60, john='hmac-md5', extended=True),
-            HashInfo(name='md5(md5($salt).$pass)', hashcat=3610, john=None, extended=True),
-            HashInfo(name='md5($salt.md5($pass))', hashcat=3710, john=None, extended=True),
-            HashInfo(name='md5($pass.md5($salt))', hashcat=3720, john=None, extended=True),
-            HashInfo(name='md5($salt.$pass.$salt)', hashcat=3810, john=None, extended=True),
-            HashInfo(name='md5(md5($pass).md5($salt))', hashcat=3910, john=None, extended=True),
-            HashInfo(name='md5($salt.md5($salt.$pass))', hashcat=4010, john=None, extended=True),
-            HashInfo(name='md5($salt.md5($pass.$salt))', hashcat=4110, john=None, extended=True),
-            HashInfo(name='md5($username.0.$pass)', hashcat=4210, john=None, extended=True)]),
     Prototype(
         regex=re.compile(r'^(\$snefru\$)?[a-f0-9]{32}$', re.IGNORECASE),
         modes=[
@@ -718,7 +941,7 @@ prototypes = [
         modes=[
             HashInfo(name='PostgreSQL Challenge-Response Authentication (MD5)', hashcat=11100, john='postgres', extended=False)]),
     Prototype(
-        regex=re.compile(r'^\$siemens-s7\$[0-9]{1}\$[a-f0-9]{40}\$[a-f0-9]{40}$', re.IGNORECASE),
+        regex=re.compile(r'^\$siemens-s7\$\$[0-9]{1}\$[a-f0-9]{40}\$[a-f0-9]{40}$', re.IGNORECASE),
         modes=[
             HashInfo(name='Siemens-S7', hashcat=None, john='siemens-s7', extended=False)]),
     Prototype(
@@ -785,14 +1008,14 @@ def writeResult(identified_modes, outfile, hashcatMode=False, johnFormat=False, 
 
 def main():
     usage = "{0} [-h] [-e] [-m] [-j] [-o FILE] [--version] INPUT".format(os.path.basename(__file__))
+    banner = "hashID v{0} by {1} ({2})".format(__version__, __author__, __github__)
+    description = "Identify the different types of hashes used to encrypt data"
 
-    parser = argparse.ArgumentParser(
-        description="Identify the different types of hashes used to encrypt data",
-        usage=usage,
-        epilog=__license__,
-        add_help=False,
-        formatter_class=lambda prog: argparse.HelpFormatter(prog, max_help_position=27)
-    )
+    parser = argparse.ArgumentParser(usage=usage,
+                                     formatter_class=lambda prog: argparse.HelpFormatter(prog, max_help_position=27),
+                                     description=description,
+                                     epilog=__license__,
+                                     add_help=False)
     parser.add_argument("strings",
                         metavar="INPUT", type=str, nargs="*",
                         help="input to analyze (default: STDIN)")
@@ -812,13 +1035,11 @@ def main():
     group.add_argument("-h", "--help",
                        action="help",
                        help="show this help message and exit")
-    group.add_argument("--version",
-                       action="version",
-                       version=__banner__)
+    group.add_argument("--version", action="version", version=banner)
     args = parser.parse_args()
 
     hashID = HashID()
-
+    
     if not args.outfile:
         outfile = sys.stdout
     else:
